@@ -4,5 +4,4 @@ compile: main.c
 run: main
 	./main
 
-all: main.c main
-	./main
+all: compile run
