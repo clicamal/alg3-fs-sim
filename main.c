@@ -212,8 +212,10 @@ void destroy_fs_node_nm_queue(fs_node_nm_queue *queue) {
   fs_node_nm_queue_el *aux = queue->head;
 
   while (aux != NULL) {
-    free(aux);
+    fs_node_nm_queue_el *destroy = aux;
+
     aux = aux->next;
+    free(destroy);
   }
 
   free(queue);
