@@ -16,15 +16,14 @@ typedef struct fs_node {
   struct fs_node *parent, *child, *next;
 } fs_node;
 
-typedef struct fs_node_nm_queue_el {
+typedef struct fs_node_nm_stack_el {
   char *data;
-  struct fs_node_nm_queue_el *next;
-} fs_node_nm_queue_el;
+  struct fs_node_nm_stack_el *prev, *next;
+} fs_node_nm_stack_el;
 
-typedef struct fs_node_nm_queue {
-  fs_node_nm_queue_el *head;
-  fs_node_nm_queue_el *tail;
-} fs_node_nm_queue;
+typedef struct fs_node_nm_stack {
+  fs_node_nm_stack_el *base, *top;
+} fs_node_nm_stack;
 
 fs_node *create_node(char *, node_type);
 void destroy_node(fs_node **);
@@ -37,11 +36,10 @@ bool rm(fs_node *, char *);
 void scan(char *);
 char *next_token(char *);
 cmd parse_cmd(char *);
-fs_node_nm_queue_el *create_fs_node_nm_queue_el(char *);
-fs_node_nm_queue *create_fs_node_nm_queue();
-void destroy_fs_node_nm_queue(fs_node_nm_queue *);
-void enqueue(fs_node_nm_queue *, char *);
-void dequeue(fs_node_nm_queue *);
+fs_node_nm_stack_el *create_fs_node_nm_stack_el(char *);
+void destroy_fs_node_nm_stack(fs_node_nm_stack *);
+void push(fs_node_nm_stack *, char *);
+void pop(fs_node_nm_stack *);
 
 fs_node *create_node(char *name, node_type type) {
   fs_node *node = (fs_node *) malloc(sizeof(fs_node));
@@ -186,64 +184,65 @@ cmd parse_cmd(char *buff) {
   else return WRNG_CMD;
 }
 
-fs_node_nm_queue_el *create_fs_node_nm_queue_el(char *data) {
-  fs_node_nm_queue_el *el = (fs_node_nm_queue_el *) malloc(sizeof(fs_node_nm_queue_el));
+fs_node_nm_stack *create_fs_node_nm_stack() {
+  fs_node_nm_stack *stack = (fs_node_nm_stack *) malloc(sizeof(fs_node_nm_stack));
+
+  stack->top = NULL;
+  stack->base = NULL;
+
+  return stack;
+}
+
+fs_node_nm_stack_el *create_fs_node_nm_stack_el(char *data) {
+  fs_node_nm_stack_el *el = (fs_node_nm_stack_el *) malloc(sizeof(fs_node_nm_stack_el));
 
   if (el == NULL) return NULL;
 
   el->data = data;
+  el->prev = NULL;
   el->next = NULL;
 
   return el;
 }
 
-fs_node_nm_queue *create_fs_node_nm_queue() {
-  fs_node_nm_queue *queue = (fs_node_nm_queue *) malloc(sizeof(fs_node_nm_queue));
-
-  if (queue == NULL) return NULL;
-
-  queue->head = NULL;
-  queue->tail = NULL;
-
-  return queue;
-}
-
-void destroy_fs_node_nm_queue(fs_node_nm_queue *queue) {
-  fs_node_nm_queue_el *aux = queue->head;
+void destroy_fs_node_nm_stack(fs_node_nm_stack *stack) {
+  fs_node_nm_stack_el *aux = stack->top;
 
   while (aux != NULL) {
-    fs_node_nm_queue_el *destroy = aux;
-
-    aux = aux->next;
-    free(destroy);
+    fs_node_nm_stack_el *next = aux->next;
+    free(aux);
+    aux = next;
   }
-
-  free(queue);
 }
 
-void enqueue(fs_node_nm_queue *queue, char *data) {
-  fs_node_nm_queue_el *new_el = create_fs_node_nm_queue_el(data);
+void push(fs_node_nm_stack *stack, char *data) {
+  fs_node_nm_stack_el *new_el = create_fs_node_nm_stack_el(data);
 
-  if (queue->head == NULL) {
-    queue->head = queue->tail = new_el;
+  if (stack->top == NULL) {
+    stack->top = stack->base = new_el;
   }
 
   else {
-    queue->tail->next = new_el;
-    queue->tail = new_el;
+    new_el->next = stack->top;
+    stack->top->prev = new_el;
+    stack->top = new_el;
   }
 }
 
-void dequeue(fs_node_nm_queue *queue) {
-  fs_node_nm_queue_el *aux = queue->head;
-  queue->head = queue->head->next;
+void pop(fs_node_nm_stack *stack) {
+  fs_node_nm_stack_el *aux = stack->top;
+
+  stack->top = aux->next;
+
+  if (stack->top != NULL) stack->top->prev = NULL;
+  else stack->base = NULL;
 
   free(aux);
 }
 
 int main(void) {
   fs_node *root = create_node("root", DIR), *cur = root;
-  fs_node_nm_queue *node_nm_queue = create_fs_node_nm_queue();
+  fs_node_nm_stack *fs_node_nm_s = create_fs_node_nm_stack();
   cmd cm;
   char input[LINE_SIZE];
   bool error = false;
@@ -254,13 +253,13 @@ int main(void) {
       error = false;
     }
 
-    fs_node_nm_queue_el *aux = node_nm_queue->head;
+    fs_node_nm_stack_el *aux = fs_node_nm_s->base;
 
     printf("-");
 
     while (aux != NULL) {
       printf("%s-", aux->data);
-      aux = aux->next;
+      aux = aux->prev;
     }
 
     printf(">");
@@ -290,8 +289,8 @@ int main(void) {
         error = aux == NULL;
 
         if (!error) {
-          if (aux == cur->parent) dequeue(node_nm_queue);
-          else enqueue(node_nm_queue, aux->name);
+          if (aux == cur->parent) pop(fs_node_nm_s);
+          else push(fs_node_nm_s, aux->name);
 
           cur = aux;
         }
@@ -320,7 +319,7 @@ int main(void) {
   } while (cm != EX);
 
   destroy_node(&root);
-  destroy_fs_node_nm_queue(node_nm_queue);
+  destroy_fs_node_nm_stack(fs_node_nm_s);
 
   return 0;
 }
