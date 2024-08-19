@@ -20,6 +20,7 @@ bool insert_node(fs_node *, char *, node_type);
 bool ma(fs_node *, char *);
 bool mp(fs_node *, char *);
 bool ls(fs_node *);
+fs_node *cd(fs_node *, char *);
 
 fs_node *create_node(char *name, node_type type) {
   fs_node *node = (fs_node *) malloc(sizeof(fs_node));
@@ -104,12 +105,27 @@ bool ls(fs_node *ls_root) {
   return true;
 }
 
+fs_node *cd(fs_node *cd_root, char *name) {
+  if (cd_root->type != DIR) return NULL;
+
+  fs_node *aux = cd_root->child;
+
+  while (aux != NULL) {
+    if (aux->type == DIR && strcmp(aux->name, name) == 0) break;
+    aux = aux->next;
+  }
+
+  return aux;
+}
+
 int main(void) {
   fs_node *root = create_node("root", DIR);
 
   ma(root, "0");
   ma(root, "b");
   mp(root, "A");
+
+  fs_node *d = cd(root, "A");
 
   ls(root);
 
