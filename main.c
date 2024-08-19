@@ -1,12 +1,14 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-typedef enum node_type {
-  FL,
-  DIR
-} node_type;
+#define LINE_SIZE 255
+
+typedef enum node_type { FL, DIR } node_type;
+
+typedef enum cmd { MA, MP, LS, CD, RM, EX, NOP } cmd;
 
 typedef struct fs_node {
   char *name;
@@ -22,6 +24,9 @@ bool mp(fs_node *, char *);
 bool ls(fs_node *);
 fs_node *cd(fs_node *, char *);
 bool rm(fs_node *, char *);
+void scan(char *);
+char *next_token(char *);
+cmd parse_cmd(char *);
 
 fs_node *create_node(char *name, node_type type) {
   fs_node *node = (fs_node *) malloc(sizeof(fs_node));
@@ -141,22 +146,70 @@ bool rm(fs_node *rm_root, char *name) {
   return true;
 }
 
+void scan(char *input_buff) {
+  fgets(input_buff, LINE_SIZE, stdin);
+
+  input_buff[(int8_t) (strchr(input_buff, '\n') - input_buff)] = '\0';
+}
+
+char *next_token(char *buff) { return strtok(buff, " "); }
+
+cmd parse_cmd(char *buff) {
+  char *cur_tok = next_token(buff);
+
+  if (cur_tok == NULL) return NOP;
+
+  if (strcmp(cur_tok, "ma") == 0) return MA;
+  if (strcmp(cur_tok, "mp") == 0) return MP;
+  if (strcmp(cur_tok, "ls") == 0) return LS;
+  if (strcmp(cur_tok, "cd") == 0) return CD;
+  if (strcmp(cur_tok, "rm") == 0) return RM;
+  if (strcmp(cur_tok, "ex") == 0) return EX;
+
+  else return NOP;
+}
+
 int main(void) {
-  fs_node *root = create_node("root", DIR);
+  fs_node *root = create_node("root", DIR), *cur = root;
+  cmd cm;
+  char input[LINE_SIZE];
+  bool error = false;
 
-  ma(root, "0");
-  ma(root, "b");
-  mp(root, "A");
+  do {
+    if (error) {
+      printf("opcao invalida\n");
+      error = false;
+    }
 
-  fs_node *d = cd(root, "A");
+    printf("->");
 
-  ls(root);
+    scan(input);
+    cm = parse_cmd(input);
 
-  rm(root, "b");
-
-  ls(root);
-
-  destroy_node(&root);
+    switch (cm) {
+    case MA:
+      error = !ma(cur, next_token(NULL));
+      break;
+    case MP:
+      error = !mp(cur, next_token(NULL));
+      break;
+    case LS:
+      error = !ls(cur);
+      break;
+    case CD:
+      cur = cd(cur, next_token(NULL));
+      error = (cur == NULL);
+      break;
+    case RM:
+      error = !rm(cur, next_token(NULL));
+      break;
+    case EX:
+      printf("saindo\n");
+      break;
+    default:
+      error = true;
+    }
+  } while (cm != EX);
 
   return 0;
 }
