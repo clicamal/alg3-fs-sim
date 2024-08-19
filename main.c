@@ -104,6 +104,8 @@ bool insert_node(fs_node *insert_root, char *name, node_type type) {
 
       while (aux->next != NULL && strcmp(aux->next->name, name) < 0) aux = aux->next;
 
+      if (strcmp(aux->name, name) == 0 && aux->type == type) return false;
+
       new_node->next = aux->next;
       aux->next = new_node;
     }
