@@ -7,7 +7,6 @@
 #define LINE_SIZE 255
 
 typedef enum node_type { FL, DIR } node_type;
-
 typedef enum cmd { MA, MP, LS, CD, RM, EX, NOP, WRNG_CMD } cmd;
 
 typedef struct fs_node {
@@ -62,7 +61,6 @@ void destroy_node(fs_node **node) {
 
   while (aux != NULL) {
     fs_node *next = aux->next;
-
     destroy_node(&aux);
     aux = next;
   }
@@ -74,12 +72,13 @@ void destroy_node(fs_node **node) {
 bool insert_node(fs_node *insert_root, char *name, node_type type) {
   if (insert_root->type != DIR || name == NULL) return false;
 
-  fs_node *aux = insert_root->child;
+  fs_node *aux = insert_root->child, *prev = NULL;
 
   while (aux != NULL) {
-    if (strcmp(aux->name, name) == 0 && aux->type == type) {
-      return false; // Duplicate node found
-    }
+    if (strcmp(aux->name, name) == 0) return false;
+    if (strcmp(aux->name, name) > 0) break;
+
+    prev = aux;
     aux = aux->next;
   }
 
@@ -89,26 +88,12 @@ bool insert_node(fs_node *insert_root, char *name, node_type type) {
 
   new_node->parent = insert_root;
 
-  if (insert_root->child == NULL) {
+  if (prev == NULL) {
+    new_node->next = insert_root->child;
     insert_root->child = new_node;
-  }
-
-  else {
-    if (strcmp(insert_root->child->name, name) > 0) {
-      new_node->next = insert_root->child;
-      insert_root->child = new_node;
-    }
-
-    else {
-      fs_node *aux = insert_root->child;
-
-      while (aux->next != NULL && strcmp(aux->next->name, name) < 0) aux = aux->next;
-
-      if (strcmp(aux->name, name) == 0 && aux->type == type) return false;
-
-      new_node->next = aux->next;
-      aux->next = new_node;
-    }
+  } else {
+    new_node->next = prev->next;
+    prev->next = new_node;
   }
 
   return true;
