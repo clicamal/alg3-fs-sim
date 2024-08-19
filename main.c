@@ -254,7 +254,16 @@ int main(void) {
       error = false;
     }
 
-    printf("->");
+    fs_node_nm_queue_el *aux = node_nm_queue->head;
+
+    printf("-");
+
+    while (aux != NULL) {
+      printf("%s-", aux->data);
+      aux = aux->next;
+    }
+
+    printf(">");
 
     scan(input);
     cm = parse_cmd(input);
@@ -280,8 +289,13 @@ int main(void) {
 
         error = aux == NULL;
 
-        if (!error)
+        if (!error) {
+          if (aux == cur->parent) dequeue(node_nm_queue);
+          else enqueue(node_nm_queue, aux->name);
+
           cur = aux;
+        }
+
         break;
       }
 
