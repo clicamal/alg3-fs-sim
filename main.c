@@ -74,6 +74,15 @@ void destroy_node(fs_node **node) {
 bool insert_node(fs_node *insert_root, char *name, node_type type) {
   if (insert_root->type != DIR || name == NULL) return false;
 
+  fs_node *aux = insert_root->child;
+
+  while (aux != NULL) {
+    if (strcmp(aux->name, name) == 0 && aux->type == type) {
+      return false; // Duplicate node found
+    }
+    aux = aux->next;
+  }
+
   fs_node *new_node = create_node(name, type);
 
   if (new_node == NULL) return false;
@@ -93,8 +102,7 @@ bool insert_node(fs_node *insert_root, char *name, node_type type) {
     else {
       fs_node *aux = insert_root->child;
 
-      while (aux->next != NULL && strcmp(aux->next->name, name) < 0)
-        aux = aux->next;
+      while (aux->next != NULL && strcmp(aux->next->name, name) < 0) aux = aux->next;
 
       new_node->next = aux->next;
       aux->next = new_node;
@@ -304,7 +312,7 @@ int main(void) {
       }
 
       case EX: {
-        printf("saindo\n");
+        printf("sistema encerrado\n");
         break;
       }
 
