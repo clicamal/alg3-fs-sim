@@ -196,10 +196,15 @@ int main(void) {
     case LS:
       error = !ls(cur);
       break;
-    case CD:
-      cur = cd(cur, next_token(NULL));
-      error = (cur == NULL);
+    case CD: {
+      fs_node *aux = cd(cur, next_token(NULL));
+
+      error = aux == NULL;
+
+      if (!error) cur = aux;
       break;
+    }
+
     case RM:
       error = !rm(cur, next_token(NULL));
       break;
