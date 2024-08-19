@@ -59,7 +59,7 @@ void destroy_node(fs_node **node) {
 }
 
 bool insert_node(fs_node *insert_root, char *name, node_type type) {
-  if (insert_root->type != DIR) return false;
+  if (insert_root->type != DIR && name == NULL) return false;
 
   fs_node *new_node = create_node(name, type);
 
@@ -80,7 +80,7 @@ bool insert_node(fs_node *insert_root, char *name, node_type type) {
     else {
       fs_node *aux = insert_root->child;
 
-      while (aux->next != NULL && strcmp(aux->next->name, name) <= 0)
+      while (aux->next != NULL && strcmp(aux->next->name, name) < 0)
         aux = aux->next;
 
       new_node->next = aux->next;
@@ -113,7 +113,7 @@ bool ls(fs_node *ls_root) {
 }
 
 fs_node *cd(fs_node *cd_root, char *name) {
-  if (cd_root->type != DIR) return NULL;
+  if (cd_root->type != DIR && name == NULL) return NULL;
 
   fs_node *aux = cd_root->child;
 
@@ -126,7 +126,7 @@ fs_node *cd(fs_node *cd_root, char *name) {
 }
 
 bool rm(fs_node *rm_root, char *name) {
-  if (rm_root->type != DIR) return false;
+  if (rm_root->type != DIR && name == NULL) return false;
 
   fs_node *aux = rm_root->child, *prev = NULL;
 
