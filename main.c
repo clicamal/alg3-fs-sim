@@ -115,6 +115,8 @@ bool ls(fs_node *ls_root) {
 fs_node *cd(fs_node *cd_root, char *name) {
   if (cd_root->type != DIR || name == NULL) return NULL;
 
+  if (strcmp(name, "..") == 0) return cd_root->parent;
+
   fs_node *aux = cd_root->child;
 
   while (aux != NULL) {
@@ -187,34 +189,48 @@ int main(void) {
     cm = parse_cmd(input);
 
     switch (cm) {
-    case MA:
-      error = !ma(cur, next_token(NULL));
-      break;
-    case MP:
-      error = !mp(cur, next_token(NULL));
-      break;
-    case LS:
-      error = !ls(cur);
-      break;
-    case CD: {
-      fs_node *aux = cd(cur, next_token(NULL));
+      case MA: {
+        error = !ma(cur, next_token(NULL));
+        break;
+      }
 
-      error = aux == NULL;
+      case MP: {
+        error = !mp(cur, next_token(NULL));
+        break;
+      }
 
-      if (!error) cur = aux;
-      break;
-    }
+      case LS: {
+        error = !ls(cur);
+        break;
+      }
 
-    case RM:
-      error = !rm(cur, next_token(NULL));
-      break;
-    case EX:
-      printf("saindo\n");
-      break;
-    case NOP:
-      continue;
-    default:
-      error = true;
+      case CD: {
+        fs_node *aux = cd(cur, next_token(NULL));
+
+        error = aux == NULL;
+
+        if (!error)
+          cur = aux;
+        break;
+      }
+
+      case RM: {
+        error = !rm(cur, next_token(NULL));
+        break;
+      }
+
+      case EX: {
+        printf("saindo\n");
+        break;
+      }
+
+      case NOP: {
+        continue;
+      }
+
+      default: {
+        error = true;
+      }
     }
   } while (cm != EX);
 
