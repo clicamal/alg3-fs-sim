@@ -16,6 +16,16 @@ typedef struct fs_node {
   struct fs_node *parent, *child, *next;
 } fs_node;
 
+typedef struct fs_node_nm_queue_el {
+  char *data;
+  struct fs_node_nm_queue_el *next;
+} fs_node_nm_queue_el;
+
+typedef struct fs_node_nm_queue {
+  fs_node_nm_queue_el *head;
+  fs_node_nm_queue_el *tail;
+} fs_node_nm_queue;
+
 fs_node *create_node(char *, node_type);
 void destroy_node(fs_node **);
 bool insert_node(fs_node *, char *, node_type);
@@ -27,6 +37,11 @@ bool rm(fs_node *, char *);
 void scan(char *);
 char *next_token(char *);
 cmd parse_cmd(char *);
+fs_node_nm_queue_el *create_fs_node_nm_queue_el(char *);
+fs_node_nm_queue *create_fs_node_nm_queue();
+void destroy_fs_node_nm_queue(fs_node_nm_queue *);
+void enqueue(fs_node_nm_queue *, char *);
+void dequeue(fs_node_nm_queue *);
 
 fs_node *create_node(char *name, node_type type) {
   fs_node *node = (fs_node *) malloc(sizeof(fs_node));
@@ -171,8 +186,62 @@ cmd parse_cmd(char *buff) {
   else return WRNG_CMD;
 }
 
+fs_node_nm_queue_el *create_fs_node_nm_queue_el(char *data) {
+  fs_node_nm_queue_el *el = (fs_node_nm_queue_el *) malloc(sizeof(fs_node_nm_queue_el));
+
+  if (el == NULL) return NULL;
+
+  el->data = data;
+  el->next = NULL;
+
+  return el;
+}
+
+fs_node_nm_queue *create_fs_node_nm_queue() {
+  fs_node_nm_queue *queue = (fs_node_nm_queue *) malloc(sizeof(fs_node_nm_queue));
+
+  if (queue == NULL) return NULL;
+
+  queue->head = NULL;
+  queue->tail = NULL;
+
+  return queue;
+}
+
+void destroy_fs_node_nm_queue(fs_node_nm_queue *queue) {
+  fs_node_nm_queue_el *aux = queue->head;
+
+  while (aux != NULL) {
+    free(aux);
+    aux = aux->next;
+  }
+
+  free(queue);
+}
+
+void enqueue(fs_node_nm_queue *queue, char *data) {
+  fs_node_nm_queue_el *new_el = create_fs_node_nm_queue_el(data);
+
+  if (queue->head == NULL) {
+    queue->head = queue->tail = new_el;
+  }
+
+  else {
+    queue->tail->next = new_el;
+    queue->tail = new_el;
+  }
+}
+
+void dequeue(fs_node_nm_queue *queue) {
+  fs_node_nm_queue_el *aux = queue->head;
+  queue->head = queue->head->next;
+
+  free(aux);
+}
+
 int main(void) {
   fs_node *root = create_node("root", DIR), *cur = root;
+  fs_node_nm_queue *node_nm_queue = create_fs_node_nm_queue();
   cmd cm;
   char input[LINE_SIZE];
   bool error = false;
@@ -233,6 +302,9 @@ int main(void) {
       }
     }
   } while (cm != EX);
+
+  destroy_node(&root);
+  destroy_fs_node_nm_queue(node_nm_queue);
 
   return 0;
 }
