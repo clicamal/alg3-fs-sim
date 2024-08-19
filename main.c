@@ -15,12 +15,13 @@ typedef struct fs_node {
 } fs_node;
 
 fs_node *create_node(char *, node_type);
-void destroy_node(fs_node *);
+void destroy_node(fs_node **);
 bool insert_node(fs_node *, char *, node_type);
 bool ma(fs_node *, char *);
 bool mp(fs_node *, char *);
 bool ls(fs_node *);
 fs_node *cd(fs_node *, char *);
+bool rm(fs_node *, char *);
 
 fs_node *create_node(char *name, node_type type) {
   fs_node *node = (fs_node *) malloc(sizeof(fs_node));
@@ -36,19 +37,20 @@ fs_node *create_node(char *name, node_type type) {
   return node;
 }
 
-void destroy_node(fs_node *node) {
-  free(node->name);
+void destroy_node(fs_node **node) {
+  free((*node)->name);
 
-  fs_node *aux = node->child;
+  fs_node *aux = (*node)->child;
 
   while (aux != NULL) {
     fs_node *next = aux->next;
 
-    destroy_node(aux);
+    destroy_node(&aux);
     aux = next;
   }
 
-  free(node);
+  free(*node);
+  *node = NULL;
 }
 
 bool insert_node(fs_node *insert_root, char *name, node_type type) {
@@ -118,6 +120,27 @@ fs_node *cd(fs_node *cd_root, char *name) {
   return aux;
 }
 
+bool rm(fs_node *rm_root, char *name) {
+  if (rm_root->type != DIR) return false;
+
+  fs_node *aux = rm_root->child, *prev = NULL;
+
+  while (aux != NULL) {
+    if (strcmp(aux->name, name) == 0) break;
+    prev = aux;
+    aux = aux->next;
+  }
+
+  if (aux == NULL) return false;
+
+  if (prev == NULL) rm_root->child = aux->next;
+  else prev->next = aux->next;
+
+  destroy_node(&aux);
+
+  return true;
+}
+
 int main(void) {
   fs_node *root = create_node("root", DIR);
 
@@ -129,7 +152,11 @@ int main(void) {
 
   ls(root);
 
-  destroy_node(root);
+  rm(root, "b");
+
+  ls(root);
+
+  destroy_node(&root);
 
   return 0;
 }
