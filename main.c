@@ -30,10 +30,11 @@ bool insert_node(fs_node *, char *, node_type);
 bool ma(fs_node *, char *);
 bool mp(fs_node *, char *);
 bool ls(fs_node *);
-fs_node *cd(fs_node_stack *, fs_node *, char *);
+fs_node *cd(fs_node_stack *, fs_node *, fs_node *, char *);
 bool rm(fs_node *, char *);
 void scan(char *);
 char *next_token(char *);
+bool streq(char *, char *);
 cmd parse_cmd(char *);
 fs_node_stack_el *create_fs_node_stack_el(fs_node *);
 void destroy_fs_node_stack(fs_node_stack *);
@@ -74,7 +75,7 @@ bool insert_node(fs_node *insert_root, char *name, node_type type) {
   fs_node *aux = insert_root->child, *prev = NULL;
 
   while (aux != NULL) {
-    if (strcmp(aux->name, name) == 0) return false;
+    if (streq(aux->name, name)) return false;
     if (strcmp(aux->name, name) > 0) break;
 
     prev = aux;
@@ -117,15 +118,23 @@ bool ls(fs_node *ls_root) {
   return true;
 }
 
-fs_node *cd(fs_node_stack *fs_node_s, fs_node *cd_root, char *name) {
+fs_node *cd(fs_node_stack *fs_node_s, fs_node *root_dir, fs_node *cd_root, char *name) {
   if (cd_root->type != DIR || name == NULL) return NULL;
 
-  if (strcmp(name, "..") == 0) return fs_node_stack_pop(fs_node_s);
+  if (streq(name, "..")) {
+    if (fs_node_s->top && fs_node_s->top->next == NULL) {
+      fs_node_stack_pop(fs_node_s);
+
+      return root_dir;
+    }
+
+    return fs_node_stack_pop(fs_node_s);
+  }
 
   fs_node *aux = cd_root->child;
 
   while (aux != NULL) {
-    if (aux->type == DIR && strcmp(aux->name, name) == 0) break;
+    if (aux->type == DIR && streq(aux->name, name)) break;
     aux = aux->next;
   }
 
@@ -138,7 +147,7 @@ bool rm(fs_node *rm_root, char *name) {
   fs_node *aux = rm_root->child, *prev = NULL;
 
   while (aux != NULL) {
-    if (strcmp(aux->name, name) == 0) break;
+    if (streq(aux->name, name)) break;
     prev = aux;
     aux = aux->next;
   }
@@ -161,28 +170,30 @@ void scan(char *input_buff) {
 
 char *next_token(char *buff) { return strtok(buff, " "); }
 
+bool streq(char *str1, char *str2) { return strcmp(str1, str2) == 0; }
+
 cmd parse_cmd(char *buff) {
   char *cur_tok = next_token(buff);
 
   if (cur_tok == NULL) return NOP;
 
-  if (strcmp(cur_tok, "ma") == 0) return MA;
-  if (strcmp(cur_tok, "mp") == 0) return MP;
-  if (strcmp(cur_tok, "ls") == 0) return LS;
-  if (strcmp(cur_tok, "cd") == 0) return CD;
-  if (strcmp(cur_tok, "rm") == 0) return RM;
-  if (strcmp(cur_tok, "ex") == 0) return EX;
+  if (streq(cur_tok, "ma")) return MA;
+  if (streq(cur_tok, "mp")) return MP;
+  if (streq(cur_tok, "ls")) return LS;
+  if (streq(cur_tok, "cd")) return CD;
+  if (streq(cur_tok, "rm")) return RM;
+  if (streq(cur_tok, "ex")) return EX;
 
   else return WRNG_CMD;
 }
 
-fs_node_stack *create_fs_node_stack() {
-  fs_node_stack *stack = (fs_node_stack *) malloc(sizeof(fs_node_stack));
+fs_node_stack *create_fs_node_stack(void) {
+  fs_node_stack *fs_node_s = (fs_node_stack *) malloc(sizeof(fs_node_stack));
 
-  stack->top = NULL;
-  stack->base = NULL;
+  fs_node_s->top = NULL;
+  fs_node_s->base = NULL;
 
-  return stack;
+  return fs_node_s;
 }
 
 fs_node_stack_el *create_fs_node_stack_el(fs_node *node) {
@@ -197,8 +208,8 @@ fs_node_stack_el *create_fs_node_stack_el(fs_node *node) {
   return el;
 }
 
-void destroy_fs_node_stack(fs_node_stack *stack) {
-  fs_node_stack_el *aux = stack->top;
+void destroy_fs_node_stack(fs_node_stack *fs_node_s) {
+  fs_node_stack_el *aux = fs_node_s->top;
 
   while (aux != NULL) {
     fs_node_stack_el *next = aux->next;
@@ -207,37 +218,45 @@ void destroy_fs_node_stack(fs_node_stack *stack) {
   }
 }
 
-fs_node *fs_node_stack_push(fs_node_stack *stack, fs_node *node) {
-  if (stack == NULL || node == NULL) return NULL;
+fs_node *fs_node_stack_push(fs_node_stack *fs_node_s, fs_node *node) {
+  if (fs_node_s == NULL || node == NULL) return NULL;
 
   fs_node_stack_el *new_el = create_fs_node_stack_el(node);
 
-  if (stack->top == NULL) {
-    stack->top = stack->base = new_el;
+  if (fs_node_s->top == NULL) {
+    fs_node_s->top = fs_node_s->base = new_el;
   }
 
   else {
-    new_el->next = stack->top;
-    stack->top->prev = new_el;
-    stack->top = new_el;
+    new_el->next = fs_node_s->top;
+    fs_node_s->top->prev = new_el;
+    fs_node_s->top = new_el;
   }
 
   return node;
 }
 
-fs_node *fs_node_stack_pop(fs_node_stack *stack) {
-  if (stack == NULL | stack->top == NULL) return NULL;
+fs_node *fs_node_stack_pop(fs_node_stack *fs_node_s) {
+  if (fs_node_s == NULL) return NULL;
+  if (fs_node_s->top == NULL) return NULL;
 
-  fs_node_stack_el *aux = stack->top;
 
-  stack->top = aux->next;
+  fs_node_stack_el *aux = fs_node_s->top;
 
-  if (stack->top != NULL) stack->top->prev = NULL;
-  else stack->base = NULL;
+  fs_node_s->top = aux->next;
 
   free(aux);
 
-  return stack->top->node;
+  if (fs_node_s->top != NULL) {
+    fs_node_s->top->prev = NULL;
+  }
+
+  else {
+    fs_node_s->base = NULL;
+    return NULL;
+  }
+
+  return fs_node_s->top->node;
 }
 
 int main(void) {
@@ -284,9 +303,9 @@ int main(void) {
       }
 
       case CD: {
-        fs_node *aux = cd(fs_node_s, cur, next_token(NULL));
+        fs_node *aux = cd(fs_node_s, root, cur, next_token(NULL));
 
-        error = aux == NULL;
+        error = (aux == NULL);
 
         if (!error) cur = aux;
 
