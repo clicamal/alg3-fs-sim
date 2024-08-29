@@ -165,7 +165,9 @@ bool rm(fs_node *rm_root, char *name) {
 void scan(char *input_buff) {
   fgets(input_buff, LINE_SIZE, stdin);
 
-  input_buff[(int8_t) (strchr(input_buff, '\n') - input_buff)] = '\0';
+  input_buff[LINE_SIZE - 1] = '\n';
+
+  input_buff[(short) (strchr(input_buff, '\n') - input_buff)] = '\0';
 }
 
 char *next_token(char *buff) { return strtok(buff, " "); }
@@ -184,7 +186,7 @@ cmd parse_cmd(char *buff) {
   if (streq(cur_tok, "rm")) return RM;
   if (streq(cur_tok, "ex")) return EX;
 
-  else return WRNG_CMD;
+  return WRNG_CMD;
 }
 
 fs_node_stack *create_fs_node_stack(void) {
@@ -216,6 +218,8 @@ void destroy_fs_node_stack(fs_node_stack *fs_node_s) {
     free(aux);
     aux = next;
   }
+
+  free(fs_node_s);
 }
 
 fs_node *fs_node_stack_push(fs_node_stack *fs_node_s, fs_node *node) {
@@ -284,6 +288,7 @@ int main(void) {
     printf(">");
 
     scan(input);
+
     cm = parse_cmd(input);
 
     switch (cm) {
